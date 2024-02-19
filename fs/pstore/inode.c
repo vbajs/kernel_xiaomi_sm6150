@@ -524,8 +524,10 @@ static int __init init_pstore_fs(void)
 		goto out;
 
 	err = register_filesystem(&pstore_fs_type);
-	if (err < 0)
+	if (err < 0) {
 		sysfs_remove_mount_point(fs_kobj, "pstore");
+		goto out;
+	}
 
 #ifdef CONFIG_PSTORE_LAST_KMSG
 	last_kmsg_entry = proc_create_data("last_kmsg", S_IFREG | S_IRUGO,
