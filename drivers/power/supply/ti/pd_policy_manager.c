@@ -45,6 +45,7 @@
 #define BUS_VOLT_LOOP_LMT		BUS_OVP_THRESHOLD
 
 #define PM_WORK_RUN_NORMAL_INTERVAL		500
+#define PM_WORK_RUN_QUICK_INTERVAL		200
 #define PM_WORK_RUN_CRITICAL_INTERVAL		100
 
 enum {
@@ -1193,6 +1194,7 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 	static bool recover;
 	int effective_fcc_val = 0;
 	int thermal_level = 0;
+	int capacity = 0;
 	static int curr_fcc_lmt, curr_ibus_lmt, retry_count;
 	static int request_fail_count = 0;
 	int capacity = 0;
@@ -1208,7 +1210,9 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 		pdpm->is_temp_out_fc2_range = pd_disable_cp_by_jeita_status(pdpm);
 		pr_info("is_temp_out_fc2_range:%d\n", pdpm->is_temp_out_fc2_range);
 
+		if (ln8000_is_valid)
 		pd_get_batt_capacity(pdpm, &capacity);
+
 		effective_fcc_val = usbpd_get_effective_fcc_val(pdpm);
 
 		if (effective_fcc_val > 0) {
@@ -1222,7 +1226,7 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 
 		if (pdpm->cp.vbat_volt < pm_config.min_vbat_for_cp) {
 			pr_info("batt_volt %d, waiting...\n", pdpm->cp.vbat_volt);
-		} else if (pdpm->cp.vbat_volt > pm_config.bat_volt_lp_lmt - 50 || capacity > 95) {
+		} else if (pdpm->cp.vbat_volt > pm_config.bat_volt_lp_lmt - 50 || (capacity > 89 && ln8000_is_valid)) {
 			pr_info("batt_volt %d or capacity is too high for cp, charging with switch charger\n",
 					pdpm->cp.vbat_volt);
 			usbpd_pm_move_state(pdpm, PD_PM_STATE_FC2_EXIT);
@@ -1481,7 +1485,9 @@ static void usbpd_pm_workfunc(struct work_struct *work)
 			__func__, pm_config.bat_volt_lp_lmt, pdpm->cp.vbat_volt);
 
 	if (!usbpd_pm_sm(pdpm) && pdpm->pd_active) {
-                if (ln8000_is_valid) {
+		if (pdpm->state == PD_PM_STATE_FC2_ENTRY_2 && ln8000_is_valid) {
+			interval = PM_WORK_RUN_QUICK_INTERVAL;
+                   } else if (ln8000_is_valid) {
 			interval = PM_WORK_RUN_NORMAL_INTERVAL;
                    } else {
 			interval = PM_WORK_RUN_CRITICAL_INTERVAL;
