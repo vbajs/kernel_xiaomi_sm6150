@@ -269,6 +269,22 @@ config SCHEDUTIL_DOWN_RATE_LIMIT_LITTLE
 	  This sets schedutil's default frequency down rate-limit for little cluster in
 	  microseconds.
 
+config SCHEDUTIL_DEFAULT_HIGHSPEED_FREQ_LITTLE
+	int "Default highspeed frequency for schedutil on little cluster"
+	default 0
+	help
+	  This sets schedutil's default efficient frequency for little cluster. This
+	  frequency needs to be set according to the avaliable frequencies at cpufreq-table-0
+	  for the little cores.
+
+config SCHEDUTIL_DEFAULT_HIGHSPEED_FREQ_BIG
+	int "Default highspeed frequency for schedutil on big cluster"
+	default 0
+	help
+	  This sets schedutil's default efficient frequency for big cluster. This
+	  frequency needs to be set according to the avaliable frequencies at cpufreq-table-6
+	  for the big cores.
+
 endif
 
 config CPU_FREQ_GOV_INTERACTIVE
