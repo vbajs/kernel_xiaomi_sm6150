@@ -308,23 +308,8 @@ config CPU_FREQ_GOV_BLU_SCHEDUTIL
 
 	  To compile this driver as a module, choose M here: the module will
 	  be called cpufreq_blu_schedutil.
+
 	  If in doubt, say N.
-
-config SCHEDUTIL_DEFAULT_HIGHSPEED_FREQ_LITTLE
-	int "Default highspeed frequency for the lp cluster"
-	default 0
-	help
-	  This sets schedutil's default efficient frequency for the lp
-	  cluster. This frequency needs to be set according to the available
-	  frequencies at cpufreq-table-0 for the little cores.
-
-config SCHEDUTIL_DEFAULT_HIGHSPEED_FREQ_BIG
-	int "Default highspeed frequency for the perf cluster"
-	default 0
-	help
-	  This sets schedutil's default efficient frequency for the perf
-	  cluster. This frequency needs to be set according to the available
-	  frequencies at cpufreq-table-6 for the big cores.
 
 comment "CPU frequency scaling drivers"
 

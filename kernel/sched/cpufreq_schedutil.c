@@ -22,10 +22,6 @@
 
 #define SUGOV_KTHREAD_PRIORITY	50
 
-static unsigned int default_hispeed_freq_lp = CONFIG_SCHEDUTIL_DEFAULT_HIGHSPEED_FREQ_LP;
-
-static unsigned int default_hispeed_freq_perf = CONFIG_SCHEDUTIL_DEFAULT_HIGHSPEED_FREQ_PERF;
-
 struct sugov_tunables {
 	struct gov_attr_set attr_set;
 	unsigned int		up_rate_limit_us;
@@ -406,15 +402,7 @@ static inline bool sugov_cpu_is_busy(struct sugov_cpu *sg_cpu) { return false; }
 #endif /* CONFIG_NO_HZ_COMMON */
 
 #define NL_RATIO 75
-<<<<<<< HEAD
 #define DEFAULT_HISPEED_LOAD 90
-=======
-#define DEFAULT_HISPEED_LOAD_LP 90
-#define DEFAULT_HISPEED_LOAD_PERF 90
-#define DEFAULT_CPU0_RTG_BOOST_FREQ 1000000
-#define DEFAULT_CPU4_RTG_BOOST_FREQ 0
-#define DEFAULT_CPU7_RTG_BOOST_FREQ 0
->>>>>>> efe8d6834efa (cpufreq: schedutil: add Default highspeed frequency for CPU cluster)
 static void sugov_walt_adjust(struct sugov_cpu *sg_cpu, unsigned long *util,
 			      unsigned long *max)
 {
@@ -772,9 +760,6 @@ static ssize_t hispeed_freq_store(struct gov_attr_set *attr_set,
 	struct sugov_policy *sg_policy;
 	unsigned long hs_util;
 	unsigned long flags;
-
-	if (task_is_booster(current))
-		return count;
 
 	if (kstrtouint(buf, 10, &val))
 		return -EINVAL;
