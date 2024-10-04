@@ -988,6 +988,8 @@ static int sugov_init(struct cpufreq_policy *policy)
 					CONFIG_SCHEDUTIL_UP_RATE_LIMIT_BIG;
 		tunables->down_rate_limit_us =
 					CONFIG_SCHEDUTIL_DOWN_RATE_LIMIT_BIG;
+		tunables->hispeed_freq =
+					CONFIG_SCHEDUTIL_DEFAULT_HIGHSPEED_FREQ_BIG;
 	}
 
 	if (cpumask_test_cpu(policy->cpu, cpu_lp_mask)) {
@@ -995,6 +997,8 @@ static int sugov_init(struct cpufreq_policy *policy)
 					CONFIG_SCHEDUTIL_UP_RATE_LIMIT_LITTLE;
 		tunables->down_rate_limit_us =
 					CONFIG_SCHEDUTIL_DOWN_RATE_LIMIT_LITTLE;
+		tunables->hispeed_freq =
+					CONFIG_SCHEDUTIL_DEFAULT_HIGHSPEED_FREQ_LITTLE;
 	}
 
 	policy->governor_data = sg_policy;
