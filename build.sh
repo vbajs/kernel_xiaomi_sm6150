@@ -5,7 +5,7 @@
 
 SECONDS=0 # builtin bash timer
 
-ZIPNAME="vbantom-$(date '+%Y%m%d-%H%M').zip"
+ZIPNAME="ksu-vbantom-$(date '+%Y%m%d-%H%M').zip"
 
 export ARCH=arm64
 export KBUILD_BUILD_USER=vbajs
