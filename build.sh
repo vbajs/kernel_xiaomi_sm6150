@@ -5,19 +5,7 @@
 
 SECONDS=0 # builtin bash timer
 
-# Allowed codenames
-ALLOWED_CODENAMES=("sweet" "courbet" "tucana" "toco" "phoenix" "davinci")
-
-# Prompt user for device codename
-read -p "Enter device codename: " DEVICE
-
-# Check if the entered codename is in the allowed list
-if [[ ! " ${ALLOWED_CODENAMES[@]} " =~ " ${DEVICE} " ]]; then
-    echo "Error: Invalid codename. Allowed codenames are: ${ALLOWED_CODENAMES[*]}"
-    exit 1
-fi
-
-ZIPNAME="ksu-${DEVICE}-$(date '+%Y%m%d-%H%M').zip"
+ZIPNAME="ksu-vbantom-$(date '+%Y%m%d-%H%M').zip"
 
 export ARCH=arm64
 export KBUILD_BUILD_USER=vbajs
@@ -29,8 +17,8 @@ if [[ $1 = "-c" || $1 = "--clean" ]]; then
 	echo "Cleaned output folder"
 fi
 
-echo -e "\nStarting compilation for $DEVICE...\n"
-make O=out ARCH=arm64 ${DEVICE}_defconfig
+echo -e "\nStarting compilation...\n"
+make O=out ARCH=arm64 sweet_defconfig
 make -j$(nproc) \
     O=out \
     ARCH=arm64 \
@@ -60,8 +48,8 @@ else
 fi
 
 # Modify anykernel.sh to replace device names
-sed -i "s/device\.name1=.*/device.name1=${DEVICE}/" AnyKernel3/anykernel.sh
-sed -i "s/device\.name2=.*/device.name2=${DEVICE}in/" AnyKernel3/anykernel.sh
+sed -i "s/device\.name1=.*/device.name1=sweet/" AnyKernel3/anykernel.sh
+sed -i "s/device\.name2=.*/device.name2=sweetin/" AnyKernel3/anykernel.sh
 
 cp $kernel AnyKernel3
 cp $dtbo AnyKernel3
