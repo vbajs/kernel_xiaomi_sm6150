@@ -952,7 +952,7 @@ static int ln8000_charger_get_property(struct power_supply *psy,
         }
         break;
     case POWER_SUPPLY_PROP_MODEL_NAME:
-        val->strval = "bq2597x-standalone";
+        val->strval = "ln8000";
         break;
     default:
         return -EINVAL;
@@ -1444,7 +1444,7 @@ static int ln8000_get_dev_role(struct i2c_client *client)
 
     dev_info(&client->dev,"%s: matched to %s\n", __func__, of_id->compatible);
 
-    return (int)of_id->data;
+    return (long)of_id->data;
 }
 
 static int ln8000_parse_dt(struct ln8000_info *info)
