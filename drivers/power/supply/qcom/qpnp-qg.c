@@ -1722,14 +1722,6 @@ static int qg_get_battery_capacity(struct qpnp_qg *chip, int *soc)
 	else
 		*soc = chip->msoc;
 
-	if(chip->charge_status == POWER_SUPPLY_STATUS_CHARGING){
-	        rc = qg_get_battery_current(chip, &ibat);
-                if ((rc >= 0) && (ibat < 0) && (*soc < pre_soc)) {
-			*soc = pre_soc;
-			pr_err ("lct rc=%d,ibat=%d,pre_soc=%d,*soc=%d\n", rc,ibat,pre_soc,*soc);
-		}
-	}
-
 	if (chip->dt.software_optimize_ffc_qg_iterm) {
 		if ((chip->fastcharge_mode_enabled) && (pre_soc == 99)
 			&& (*soc == 100) && (chip->charge_status == POWER_SUPPLY_STATUS_CHARGING)) {
@@ -2107,8 +2099,6 @@ done:
 #define FFC_CHG_TERM_SWD_CURRENT	-600
 #define FFC_CHG_TERM_NVT_CURRENT	-550
 #define FFC_BATT_FULL_CURRENT	920000
-#define FFC_BATT_FULL_NVT_CURRENT	925000
-#define FFC_BATT_FULL_SWD_CURRENT	880000
 #else
 #define FFC_CHG_TERM_CURRENT	-830
 #define FFC_BATT_FULL_CURRENT	1150000
@@ -2157,17 +2147,7 @@ static int qg_get_ffc_iterm_for_qg(struct qpnp_qg *chip)
 			ffc_full_current = LOW_TEMP_FFC_BATT_FULL_CURRENT;
 		}
 	} else {
-#ifdef CONFIG_K6_CHARGE
-		if (is_batt_vendor_nvt){
-			ffc_full_current = FFC_BATT_FULL_NVT_CURRENT;
-			pr_err("ffc_FULL_current nvt is 925\n", rc);
-		}else{
-			ffc_full_current = FFC_BATT_FULL_SWD_CURRENT;
-			pr_err("ffc_FULL_current swd is 880\n", rc);
-		}
-#else
 		ffc_full_current = FFC_BATT_FULL_CURRENT;
-#endif
 	}
 	pr_info("ffc_full_current = %d\n", ffc_full_current);
 
@@ -2277,7 +2257,7 @@ static int qg_psy_set_property(struct power_supply *psy,
 			pr_warn("Capacity learning active!\n");
 			return 0;
 		}
-		if (pval->intval <= 0) {
+		if (pval->intval <= 0 || pval->intval > chip->cl->nom_cap_uah) {
 			pr_err("charge_full is out of bounds\n");
 			return -EINVAL;
 		}
@@ -2737,7 +2717,8 @@ static int qg_charge_full_update(struct qpnp_qg *chip)
 		 * force a recharge only if SOC <= recharge SOC and
 		 * we have not started charging.
 		 */
-		if (input_present && chip->msoc <= recharge_soc && chip->charge_status != POWER_SUPPLY_STATUS_CHARGING) {
+		if (input_present && chip->msoc <= recharge_soc &&
+				chip->charge_status != POWER_SUPPLY_STATUS_CHARGING) {
 			/* Force recharge */
 			prop.intval = 0;
 			rc = power_supply_set_property(chip->batt_psy,
@@ -2958,37 +2939,6 @@ static void qg_sleep_exit_work(struct work_struct *work)
 }
 
 #ifdef CONFIG_BATT_VERIFY_BY_DS28E16
-/*
-static int battery_authentic_period_ms = 10000;
-#define BATTERY_AUTHENTIC_COUNT_MAX 5
-int retry_battery_authentic_result;
-static void battery_authentic_work(struct work_struct *work)
-{
-	int rc;
-	union power_supply_propval pval = {0,};
-
-	struct qpnp_qg *chip = container_of(work,
-				struct qpnp_qg,
-				battery_authentic_work.work);
-
-	rc = power_supply_get_property(chip->qg_psy,
-					POWER_SUPPLY_PROP_AUTHENTIC, &pval);
-	if (pval.intval != true) {
-		retry_battery_authentic_result++;
-		if (retry_battery_authentic_result < BATTERY_AUTHENTIC_COUNT_MAX) {
-			pr_err("battery authentic work begin to restart.\n");
-			schedule_delayed_work(&chip->battery_authentic_work,
-				msecs_to_jiffies(battery_authentic_period_ms));
-		}
-
-		if (retry_battery_authentic_result == BATTERY_AUTHENTIC_COUNT_MAX) {
-			pr_err("FG: authentic prop is %d\n", pval.intval);
-		}
-	} else {
-		pr_err("FG: authentic prop is %d\n", pval.intval);
-	}
-}
-*/
 static int ds_romid_period_ms = 1000;
 int retry_ds_romid;
 #define DS_ROMID_COUNT_MAX 5
@@ -3193,13 +3143,6 @@ static void qg_status_change_work(struct work_struct *work)
 		goto out;
 	}
 
-	if (!chip->usb_psy) {
-		chip->usb_psy = power_supply_get_by_name("usb");
-		if (!chip->usb_psy) {
-			pr_err("Failed to get usb_psy\n");
-		}
-	}
-
 	rc = qg_battery_status_update(chip);
 	if (rc < 0)
 		pr_err("Failed to process battery status update rc=%d\n", rc);
@@ -3215,16 +3158,8 @@ static void qg_status_change_work(struct work_struct *work)
 			POWER_SUPPLY_PROP_STATUS, &prop);
 	if (rc < 0)
 		pr_err("Failed to get charger status, rc=%d\n", rc);
-	else {
-		if (chip->charge_status != prop.intval) {
-			pr_err("%s last_status:%d, curr_status:%d\n", __func__, chip->charge_status, prop.intval);
-			if (chip->usb_psy) {
-				msleep(200);
-				power_supply_changed(chip->usb_psy);
-			}
-		}
+	else
 		chip->charge_status = prop.intval;
-	}
 
 	rc = power_supply_get_property(chip->batt_psy,
 			POWER_SUPPLY_PROP_CHARGE_DONE, &prop);
@@ -3570,6 +3505,7 @@ static int qg_load_battery_profile(struct qpnp_qg *chip)
 #else
 	int avail_age_level = 0;
 #endif
+
 	chip->batt_node = of_find_node_by_name(node, "qcom,battery-data");
 	if (!chip->batt_node) {
 		pr_err("Batterydata not available\n");
@@ -3664,7 +3600,7 @@ static int qg_load_battery_profile(struct qpnp_qg *chip)
 			chip->batt_age_level = avail_age_level;
 		}
 	} else {
-	profile_node = of_batterydata_get_best_profile(chip->batt_node,
+		profile_node = of_batterydata_get_best_profile(chip->batt_node,
 				chip->batt_id_ohm / 1000, NULL);
 	}
 
@@ -3674,6 +3610,7 @@ static int qg_load_battery_profile(struct qpnp_qg *chip)
 		return rc;
 	}
 #endif
+
 	rc = of_property_read_string(profile_node, "qcom,battery-type",
 				&chip->bp.batt_type_str);
 	if (rc < 0) {
@@ -4068,10 +4005,11 @@ use_pon_ocv:
 			calcualte_soc = DIV_ROUND_UP(((pon_soc - cutoff_soc) * 100),
 						(full_soc - cutoff_soc));
 			soc_raw = soc * 100;
-                } else {
+		} else {
 			calcualte_soc = pon_soc;
 			soc_raw = pon_soc * 100;
-                }
+		}
+//	}
 
 	if (use_pon_ocv == false) {
 		soc = calcualte_soc < shutdown[SDAM_SOC] ? (shutdown[SDAM_SOC] - 1) : shutdown[SDAM_SOC];
@@ -5570,7 +5508,6 @@ static int qpnp_qg_probe(struct platform_device *pdev)
 	memset(chip->ds_status, 0, 8);
 	memset(chip->ds_page0, 0, 16);
 	retry_batt_profile = 0;
-	//retry_battery_authentic_result = 0;
 	retry_ds_romid = 0;
 	retry_ds_status = 0;
 	retry_ds_page0 = 0;
@@ -5612,7 +5549,6 @@ static int qpnp_qg_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&chip->force_shutdown_work, force_shutdown_work);
 #ifdef CONFIG_BATT_VERIFY_BY_DS28E16
 	INIT_DELAYED_WORK(&chip->profile_load_work, profile_load_work);
-	//INIT_DELAYED_WORK(&chip->battery_authentic_work, battery_authentic_work);
 	INIT_DELAYED_WORK(&chip->ds_romid_work, ds_romid_work);
 	INIT_DELAYED_WORK(&chip->ds_status_work, ds_status_work);
 	INIT_DELAYED_WORK(&chip->ds_page0_work, ds_page0_work);
