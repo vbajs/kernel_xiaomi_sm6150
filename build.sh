@@ -10,7 +10,7 @@ ZIPNAME="vbantom-$(date '+%Y%m%d-%H%M').zip"
 export ARCH=arm64
 export KBUILD_BUILD_USER=vbajs
 export KBUILD_BUILD_HOST=lhohq
-export PATH="/home/vbajs/toolchains/playground/bin/:$PATH"
+export PATH="/home/vbajs/toolchains/zyc-clang/20.0.0git-20241001-release/bin/:$PATH"
 
 if [[ $1 = "-c" || $1 = "--clean" ]]; then
 	rm -rf out
