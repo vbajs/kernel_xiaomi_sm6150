@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Array of device names
-devices=("sweet" "courbet" "tucana" "toco" "phoenix" "davinci")
-#devices=("sweet" "courbet")
+#devices=("sweet" "courbet" "tucana" "toco" "phoenix" "davinci")
+devices=("sweet")
 
 # Loop through the devices
 for device in "${devices[@]}"
@@ -16,4 +16,4 @@ do
     echo ""
 done
 
-echo "Defconfig generation completed for all devices."
+echo "Defconfig generation completed."
