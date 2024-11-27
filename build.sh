@@ -10,7 +10,7 @@ ZIPNAME="vbantom-$(date '+%Y%m%d-%H%M').zip"
 export ARCH=arm64
 export KBUILD_BUILD_USER=vbajs
 export KBUILD_BUILD_HOST=tbyool
-export PATH="$PWD/clang:$PATH"
+export PATH="$PWD/clang/bin/:$PATH"
 
 if [[ $1 = "-c" || $1 = "--clean" ]]; then
 	rm -rf out
@@ -41,7 +41,7 @@ echo -e "\nKernel compiled successfully! Zipping up...\n"
 if [ -d "$AK3_DIR" ]; then
 	cp -r $AK3_DIR AnyKernel3
 else
-	if ! git clone -q https://github.com/vbajs/AnyKernel3 -b master AnyKernel3; then
+	if ! git clone --depth=1 -q https://github.com/basamaryan/AnyKernel3 -b master AnyKernel3; then
 		echo -e "\nAnyKernel3 repo not found locally and couldn't clone from GitHub! Aborting..."
 		exit 1
 	fi
