@@ -10,7 +10,16 @@ ZIPNAME="vbantom-$(date '+%Y%m%d-%H%M').zip"
 export ARCH=arm64
 export KBUILD_BUILD_USER=vbajs
 export KBUILD_BUILD_HOST=tbyool
+
+if [ ! -d "$PWD/clang" ]; then
+	wget "$(curl -s https://raw.githubusercontent.com/ZyCromerZ/Clang/main/Clang-main-link.txt)" -O "zyc-clang.tar.gz"
+	mkdir clang && tar -xvf zyc-clang.tar.gz -C clang && rm -rf zyc-clang.tar.gz
+else
+	echo "Local clang dir found, will not download clang and using that instead"
+fi
+
 export PATH="$PWD/clang/bin/:$PATH"
+export KBUILD_COMPILER_STRING="$($PWD/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 
 if [[ $1 = "-c" || $1 = "--clean" ]]; then
 	rm -rf out
