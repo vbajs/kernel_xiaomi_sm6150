@@ -26,6 +26,8 @@ if [[ $1 = "-c" || $1 = "--clean" ]]; then
 	echo "Cleaned output folder"
 fi
 
+git clone --depth=1 https://github.com/fabianonline/telegram.sh.git telegram
+
 echo -e "\nStarting compilation...\n"
 make O=out ARCH=arm64 sweet_defconfig
 make -j$(nproc) \
@@ -74,3 +76,5 @@ if test -z "$(git rev-parse --show-cdup 2>/dev/null)" &&
    head=$(git rev-parse --verify HEAD 2>/dev/null); then
 	HASH="$(echo $head | cut -c1-8)"
 fi
+
+./telegram/telegram -f $ZIPNAME -C "Completed in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) ! Latest commit: $HASH"
