@@ -5,39 +5,35 @@
 
 SECONDS=0 # builtin bash timer
 
-# Allowed codenames
-ALLOWED_CODENAMES=("sweet" "tucana" "toco" "phoenix" "davinci")
-
-# Prompt user for device codename
-read -p "Enter device codename: " DEVICE
-
-# Check if the entered codename is in the allowed list
-if [[ ! " ${ALLOWED_CODENAMES[@]} " =~ " ${DEVICE} " ]]; then
-    echo "Error: Invalid codename. Allowed codenames are: ${ALLOWED_CODENAMES[*]}"
-    exit 1
-fi
-
-ZIPNAME="${DEVICE}-$(date '+%Y%m%d-%H%M').zip"
+ZIPNAME="[KSU]VantomKernel-sweet-$(date '+%Y%m%d-%H%M').zip"
 
 export ARCH=arm64
-export KBUILD_BUILD_USER=aryan
-export KBUILD_BUILD_HOST=celeste
-export PATH="/home/celeste/pixelos/prebuilts/clang/host/linux-x86/clang-r530567/bin/:$PATH"
+export KBUILD_BUILD_USER=vbajs
+export KBUILD_BUILD_HOST=tbyool
+
+if [ ! -d "$PWD/clang" ]; then
+	aria2c -k 1M -s 8 -x 8 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r530567.tar.gz
+	mkdir clang && tar -xvf clang-r530567.tar.gz -C clang && rm -rf clang-530567.tar.gz
+else
+	echo "Local clang dir found, will not download clang and using that instead"
+fi
+
+export PATH="$PWD/clang/bin/:$PATH"
 
 if [[ $1 = "-c" || $1 = "--clean" ]]; then
 	rm -rf out
 	echo "Cleaned output folder"
 fi
 
-echo -e "\nStarting compilation for $DEVICE...\n"
-make O=out ARCH=arm64 ${DEVICE}_defconfig
+echo -e "\nStarting compilation...\n"
+make O=out ARCH=arm64 sweet_defconfig
 make -j$(nproc) \
     O=out \
     ARCH=arm64 \
     LLVM=1 \
     LLVM_IAS=1 \
     CROSS_COMPILE=aarch64-linux-gnu- \
-    CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+    CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 
 kernel="out/arch/arm64/boot/Image.gz"
 dtbo="out/arch/arm64/boot/dtbo.img"
@@ -60,8 +56,8 @@ else
 fi
 
 # Modify anykernel.sh to replace device names
-sed -i "s/device\.name1=.*/device.name1=${DEVICE}/" AnyKernel3/anykernel.sh
-sed -i "s/device\.name2=.*/device.name2=${DEVICE}in/" AnyKernel3/anykernel.sh
+sed -i "s/device\.name1=.*/device.name1=sweet/" AnyKernel3/anykernel.sh
+sed -i "s/device\.name2=.*/device.name2=sweetin/" AnyKernel3/anykernel.sh
 
 cp $kernel AnyKernel3
 cp $dtbo AnyKernel3
@@ -78,4 +74,4 @@ if test -z "$(git rev-parse --show-cdup 2>/dev/null)" &&
 	HASH="$(echo $head | cut -c1-8)"
 fi
 
-telegram -f $ZIPNAME -M "Completed in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) ! Latest commit: $HASH"
+./telegram -f $ZIPNAME -M "Completed in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) ! Latest commit: $HASH"
